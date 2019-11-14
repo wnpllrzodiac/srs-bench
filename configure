@@ -50,7 +50,8 @@ else
         cd http-parser-2.1 && 
         $SED "s/CPPFLAGS_FAST +=.*$/CPPFLAGS_FAST = \$\(CPPFLAGS_DEBUG\)/g" Makefile &&
         $SED "s/CFLAGS_FAST =.*$/CFLAGS_FAST = \$\(CFLAGS_DEBUG\)/g" Makefile &&
-        make package
+        #make package
+        make package CFLAGS='-Wno-implicit-fallthrough' # fix gcc 7.x build problem(switch fallthrough)
     )
 fi
 # check status

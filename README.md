@@ -27,6 +27,18 @@ git clone https://github.com/simple-rtmp-server/srs-bench.git &&
 cd srs-bench && ./configure && make &&
 ./objs/sb_rtmp_load -c 1 -r rtmp://127.0.0.1:1935/live/livestream
 ```
+## gcc7.x ubuntu18.04 build fix
+https://github.com/ossrs/srs-bench/issues/15
+
+修改 objs/Makefile
+
+configure生成Makefile不严谨，新版本lld检查问题。
+
+在每个target(action)中把含有main函数的目标目标文件加上就好了。
+
+比如"objs/sb_http_load: 后面紧接着加上"objs/src/main/htl_main_http_load.o "，这个target就能编译通过了。
+
+其他部分如法炮制即可
 
 ## Benchmarks
 
