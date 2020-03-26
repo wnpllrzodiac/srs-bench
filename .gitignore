@@ -29,3 +29,6 @@
 
 Makefile
 objs
+
+.idea
+
