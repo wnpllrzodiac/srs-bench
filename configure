@@ -22,20 +22,19 @@ if [ $OS_IS_OSX = YES ]; then
     _ST_MAKE=darwin-debug && _ST_EXTRA_CFLAGS="-DMD_HAVE_KQUEUE"
 fi
 
-# st-1.9
-if [[ -f ${GLOBAL_DIR_OBJS}/st-1.9/obj/libst.a ]]; then
-    echo "st-1.9t is ok.";
+# st-srs
+if [[ -f ${GLOBAL_DIR_OBJS}/st-srs/obj/libst.a ]]; then
+    echo "st-srs is ok.";
 else
-    echo "build st-1.9t"; 
+    echo "build st-srs";
     (
-        rm -rf ${GLOBAL_DIR_OBJS}/st-1.9 && cd ${GLOBAL_DIR_OBJS} && unzip ../3rdparty/st-1.9.zip && cd st-1.9 && 
-        patch -p0 < ../../3rdparty/patches/1.st.arm.patch &&
+        rm -rf ${GLOBAL_DIR_OBJS}/st-srs && cd ${GLOBAL_DIR_OBJS} && ln -sf ../3rdparty/st-srs && cd st-srs &&
         make EXTRA_CFLAGS="${_ST_EXTRA_CFLAGS}" ${_ST_MAKE}
     )
 fi
 # check status
-ret=$?; if [[ $ret -ne 0 ]]; then echo "build st-1.9 failed, ret=$ret"; exit $ret; fi
-if [ ! -f ${GLOBAL_DIR_OBJS}/st-1.9/obj/libst.a ]; then echo "build st-1.9 failed."; exit -1; fi
+ret=$?; if [[ $ret -ne 0 ]]; then echo "build st-srs failed, ret=$ret"; exit $ret; fi
+if [ ! -f ${GLOBAL_DIR_OBJS}/st-srs/obj/libst.a ]; then echo "build st-srs failed."; exit -1; fi
 
 SED="sed -i"
 if [ $OS_IS_OSX = YES ]; then SED="sed -i ''"; fi
@@ -139,7 +138,7 @@ default:
 END
 
 # Libraries
-LibSTRoot="${GLOBAL_DIR_OBJS}/st-1.9/obj"
+LibSTRoot="${GLOBAL_DIR_OBJS}/st-srs/obj"
 LibSTfile="${LibSTRoot}/libst.a"
 LibHttpParserRoot="${GLOBAL_DIR_OBJS}/http-parser-2.1"
 LibHttpParserfile="${LibHttpParserRoot}/libhttp_parser.a"
