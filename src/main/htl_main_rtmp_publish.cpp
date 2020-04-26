@@ -27,6 +27,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 
 #include <string>
+#include <vector>
+#include <fstream>
 using namespace std;
 
 // project lib
@@ -45,23 +47,27 @@ using namespace std;
 int discovery_options(int argc, char** argv, 
     bool& show_help, bool& show_version, string& url, int& threads, 
     double& startup, double& delay, double& error, double& report, int& count,
-    string& input
+    string& input, string& config_file
 ){
     int ret = ERROR_SUCCESS;
     
     static option long_options[] = {
         SharedOptions()
         {"input", no_argument, 0, 'i'},
+        {"config-file", no_argument, 0, 'f'},
         {0, 0, 0, 0}
     };
     
     int opt = 0;
     int option_index = 0;
-    while((opt = getopt_long(argc, argv, "hvc:r:t:s:d:e:m:i:", long_options, &option_index)) != -1){
+    while((opt = getopt_long(argc, argv, "hvc:r:t:s:d:e:m:i:f:", long_options, &option_index)) != -1){
         switch(opt){
             ProcessSharedOptions()
             case 'i':
                 input = optarg;
+                break;
+            case 'f':
+                config_file = optarg;
                 break;
             default:
                 show_help = true;
@@ -70,7 +76,7 @@ int discovery_options(int argc, char** argv,
     }
     
     // check values
-    if(url == "" || input == ""){
+    if((url == "" && config_file == "") || input == ""){
         show_help = true;
         return ret;
     }
@@ -99,6 +105,8 @@ void help(char** argv){
         "   %s -i %s -c 10000 -r %s\n"
         "4. start 100000 clients\n"
         "   %s -i %s -c 100000 -r %s\n"
+        "4. start 10 clients on customized urls\n"
+        "   %s -i %s -c 10 -f urls.txt\n"
         "\n"
         "This program built for %s.\n"
         "Report bugs to <%s>\n",
@@ -110,6 +118,7 @@ void help(char** argv){
         argv[0], DefaultInputFlv, DefaultRtmpUrl, 
         argv[0], DefaultInputFlv, DefaultRtmpUrl, 
         argv[0], DefaultInputFlv, DefaultRtmpUrl,
+        argv[0], DefaultInputFlv,
         BuildPlatform, BugReportEmail);
         
     exit(0);
@@ -123,8 +132,9 @@ int main(int argc, char** argv){
     double start = DefaultStartupSeconds, delay = DefaultDelaySeconds, error = DefaultErrorSeconds;
     double report = DefaultReportSeconds; int count = DefaultCount;
     string input;
+    string config_file;
     
-    if((ret = discovery_options(argc, argv, show_help, show_version, url, threads, start, delay, error, report, count, input)) != ERROR_SUCCESS){
+    if((ret = discovery_options(argc, argv, show_help, show_version, url, threads, start, delay, error, report, count, input, config_file)) != ERROR_SUCCESS){
         Error("discovery options failed. ret=%d", ret);
         return ret;
     }
@@ -146,6 +156,26 @@ int main(int argc, char** argv){
         return ret;
     }
 
+    // load url from file
+    int load_urls = 0;
+    std::vector<std::string> urls;
+    if (!config_file.empty()) {
+        load_urls = 1;
+        
+        std::ifstream file_reader(config_file.c_str());
+        if (file_reader.is_open()) {
+            while (file_reader.peek() != EOF) {
+                std::string line;
+                std::getline(file_reader, line, '\n');
+                urls.push_back(line);
+            }
+            file_reader.close();
+        }
+        else {
+            Error("Fail to open file: %s", config_file.c_str());
+            return -1;
+        }
+    }
     
     for(int i = 0; i < threads; i++){
         StRtmpPublishTask* task = new StRtmpPublishTask();
@@ -158,6 +188,16 @@ int main(int argc, char** argv){
         size_t pos = std::string::npos;
         if ((pos = rtmp_url.find("{i}")) != std::string::npos) {
             rtmp_url = rtmp_url.replace(pos, 3, _index);
+        }
+        
+        if (load_urls) {
+            if (i >= (int)urls.size()) {
+                Error("threads count exceed config-file url count, index: #%d, urls count: %lu", i, urls.size());
+                return -1;
+            }
+            
+            rtmp_url = urls[i];
+            Trace("param url=%s", rtmp_url.c_str());
         }
         
         if((ret = task->Initialize(input, rtmp_url, start, delay, error, count)) != ERROR_SUCCESS){
