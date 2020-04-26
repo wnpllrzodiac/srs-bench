@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <htl_os_st.hpp>
 #include <htl_core_error.hpp>
-#include <htl_app_rtmp_protocol.hpp>
+#include <srs_librtmp.h>
 
 #ifndef SRS_HIJACK_IO
     #error "must hijack the srs-librtmp"
@@ -49,7 +49,7 @@ void srs_hijack_io_destroy(srs_hijack_io_t ctx)
     delete skt;
 }
 
-int srs_hijack_io_create_socket(srs_hijack_io_t /*ctx*/, srs_rtmp_t /*owner*/)
+int srs_hijack_io_create_socket(srs_hijack_io_t /*ctx*/)
 {
     return ERROR_SUCCESS;
 }
@@ -102,7 +102,7 @@ int srs_hijack_io_writev(srs_hijack_io_t ctx, const iovec *iov, int iov_size, ss
     return skt->Writev(iov, iov_size, nwrite);
 }
 
-int srs_hijack_io_is_never_timeout(srs_hijack_io_t /*ctx*/, int64_t /*tm*/)
+bool srs_hijack_io_is_never_timeout(srs_hijack_io_t /*ctx*/, int64_t /*tm*/)
 {
     return true;
 }
