@@ -38,7 +38,8 @@ using namespace std;
 #include <htl_main_utility.hpp>
 
 #define DefaultDelaySeconds 1.0
-#define DefaultRtmpUrl "rtmp://127.0.0.1:1935/live/livestream"
+#define DefaultRtmpUrlSingle "rtmp://127.0.0.1:1935/live/livestream"
+#define DefaultRtmpUrl "rtmp://127.0.0.1:1935/live/livestream_{i}"
 
 int discovery_options(int argc, char** argv, 
     bool& show_help, bool& show_version, string& url, int& threads, 
@@ -92,14 +93,17 @@ void help(char** argv){
         "   %s -c 10000 -r %s\n"
         "4. start 100000 clients\n"
         "   %s -c 100000 -r %s\n"
+        "5. start 1000 unique clients\n"
+        "   %s -c 1000 -r %s\n"
         "\n"
         "This program built for %s.\n"
         "Report bugs to <%s>\n",
         argv[0], argv[0], 
-        DefaultThread, DefaultRtmpUrl, DefaultCount, // part1
+        DefaultThread, DefaultRtmpUrlSingle, DefaultCount, // part1
         (double)DefaultStartupSeconds, DefaultDelaySeconds, // part2
         DefaultErrorSeconds, DefaultReportSeconds, // part2
-        argv[0], DefaultRtmpUrl, argv[0], DefaultRtmpUrl, argv[0], DefaultRtmpUrl, argv[0], DefaultRtmpUrl,
+        argv[0], DefaultRtmpUrlSingle, argv[0], DefaultRtmpUrlSingle, argv[0], DefaultRtmpUrlSingle, argv[0], DefaultRtmpUrlSingle,
+        argv[0], DefaultRtmpUrl,
         BuildPlatform, BugReportEmail);
         
     exit(0);
@@ -137,8 +141,19 @@ int main(int argc, char** argv){
     for(int i = 0; i < threads; i++){
         StRtmpTask* task = new StRtmpTask();
 
-        if((ret = task->Initialize(url, start, delay, error, count)) != ERROR_SUCCESS){
-            Error("initialize task failed, url=%s, ret=%d", url.c_str(), ret);
+        char index[16];
+        snprintf(index, sizeof(index), "%d", i);
+        
+        std::string _index = index;
+        std::string rtmp_url = url;
+        size_t pos = std::string::npos;
+        if ((pos = rtmp_url.find("{i}")) != std::string::npos) {
+            rtmp_url = rtmp_url.replace(pos, 3, _index);
+            Trace("param url=%s", rtmp_url.c_str());
+        }
+        
+        if((ret = task->Initialize(rtmp_url, start, delay, error, count)) != ERROR_SUCCESS){
+            Error("initialize task failed, url=%s, ret=%d", rtmp_url.c_str(), ret);
             return ret;
         }
         
